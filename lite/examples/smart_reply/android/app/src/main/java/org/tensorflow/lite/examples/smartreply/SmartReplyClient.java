@@ -20,6 +20,9 @@ import android.content.res.AssetFileDescriptor;
 import android.util.Log;
 import androidx.annotation.Keep;
 import androidx.annotation.WorkerThread;
+
+import org.tensorflow.lite.Interpreter;
+
 import java.io.BufferedReader;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -32,15 +35,16 @@ import java.util.List;
 /** Interface to load TfLite model and provide predictions. */
 public class SmartReplyClient implements AutoCloseable {
   private static final String TAG = "SmartReplyDemo";
-  private static final String MODEL_PATH = "smartreply.tflite";
+  private static final String MODEL_PATH = "grammar.tflite";
   private static final String BACKOFF_PATH = "backoff_response.txt";
-  private static final String JNI_LIB = "smartreply_jni";
+  // private static final String JNI_LIB = "smartreply_jni";
 
   private final Context context;
   private long storage;
   private MappedByteBuffer model;
+  private Interpreter tflite;
 
-  private volatile boolean isLibraryLoaded;
+  // private volatile boolean isLibraryLoaded;
 
   public SmartReplyClient(Context context) {
     this.context = context;
@@ -52,15 +56,11 @@ public class SmartReplyClient implements AutoCloseable {
 
   @WorkerThread
   public synchronized void loadModel() {
-    if (!isLibraryLoaded) {
-      System.loadLibrary(JNI_LIB);
-      isLibraryLoaded = true;
-    }
 
     try {
       model = loadModelFile();
-      String[] backoff = loadBackoffList();
-      storage = loadJNI(model, backoff);
+      tflite = new Interpreter(model);
+      Log.v(TAG, "TFLite model loaded.");
     } catch (IOException e) {
       Log.e(TAG, "Fail to load model", e);
       return;
@@ -68,11 +68,16 @@ public class SmartReplyClient implements AutoCloseable {
   }
 
   @WorkerThread
-  public synchronized SmartReply[] predict(String[] input) {
+  public synchronized String[] predict(String[] input) {
     if (storage != 0) {
-      return predictJNI(storage, input);
+      // SmartReply(predictJNI(storage, input));
+      Log.v(TAG, "Predicting text with TF Lite...");
+      String[] output = new String[1];
+      tflite.run(input, output);
+      Log.v(TAG, "Output generated");
+      return output;
     } else {
-      return new SmartReply[] {};
+      return new String[] {};
     }
   }
 
@@ -120,7 +125,7 @@ public class SmartReplyClient implements AutoCloseable {
   private native long loadJNI(MappedByteBuffer buffer, String[] backoff);
 
   @Keep
-  private native SmartReply[] predictJNI(long storage, String[] text);
+  private native String[] predictJNI(long storage, String[] text);
 
   @Keep
   private native void unloadJNI(long storage);
