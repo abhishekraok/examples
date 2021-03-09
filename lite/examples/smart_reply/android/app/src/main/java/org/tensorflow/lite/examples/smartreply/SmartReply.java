@@ -34,6 +34,12 @@ public class SmartReply {
     this.score = score;
   }
 
+  @Keep
+  public SmartReply(String text) {
+    this.text = text;
+    this.score = 0;
+  }
+
   public String getText() {
     return text;
   }
