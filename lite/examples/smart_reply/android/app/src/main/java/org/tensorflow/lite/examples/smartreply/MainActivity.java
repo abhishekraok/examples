@@ -94,9 +94,9 @@ public class MainActivity extends AppCompatActivity {
           textToShow.append("Input: ").append(message).append("\n\n");
 
           // Get suggested replies from the model.
-          SmartReply[] ans = client.predict(new String[] {message});
-          for (SmartReply reply : ans) {
-            textToShow.append("Reply: ").append(reply.getText()).append("\n");
+          String[] ans = client.predict(new String[] {message});
+          for (String reply : ans) {
+            textToShow.append("Reply: ").append(reply).append("\n");
           }
           textToShow.append("------").append("\n");
 
